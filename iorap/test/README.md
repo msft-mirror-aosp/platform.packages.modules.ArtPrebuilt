@@ -6,6 +6,8 @@ when started and reads a text file.
  * iorap_test_app_v1.apk: test app version 1
  * iorap_test_app_v2.apk: test app version 2 (same with version 1 except for the
    version)
+ * iorap_test_app_v3.apk: test app version 3 (same with version 1 except for the
+   version)
  * src: The src of the app.
 
 # Build
