@@ -1,0 +1,37 @@
+prebuilt_apex {
+    name: "com.android.art.debug",
+    overrides: ["com.android.art.debug"],
+    arch: {
+        arm: {
+            src: "com.android.art.debug-arm.apex",
+        },
+        arm64: {
+            src: "com.android.art.debug-arm64.apex",
+        },
+        x86: {
+            src: "com.android.art.debug-x86.apex",
+        },
+        x86_64: {
+            src: "com.android.art.debug-x86_64.apex",
+        },
+    },
+}
+
+prebuilt_apex {
+    name: "com.android.art",
+    overrides: ["com.android.art"],
+    arch: {
+        arm: {
+            src: "com.android.art-arm.apex",
+        },
+        arm64: {
+            src: "com.android.art-arm64.apex",
+        },
+        x86: {
+            src: "com.android.art-x86.apex",
+        },
+        x86_64: {
+            src: "com.android.art-x86_64.apex",
+        },
+    },
+}
