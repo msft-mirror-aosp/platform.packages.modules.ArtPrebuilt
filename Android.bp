@@ -32,4 +32,14 @@ prebuilt_apex {
             src: "com.android.art-x86_64.apex",
         },
     },
+
+    // Export the dex implementation jars of each of these modules for use by
+    // their corresponding java_import module.
+    exported_java_libs: [
+        "apache-xml",
+        "bouncycastle",
+        "core-libart",
+        "core-oj",
+        "okhttp",
+    ],
 }
