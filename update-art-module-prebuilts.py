@@ -53,6 +53,8 @@ InstallEntry = collections.namedtuple("InstallEntry", [
     "source_path",
     # Local install path
     "install_path",
+    # True if this is a module SDK, to be skipped by --skip-module-sdk.
+    "module_sdk",
     # True if the entry is a zip file that should be unzipped to install_path
     "install_unzipped",
 ])
@@ -64,6 +66,7 @@ def install_apex_entries(apex_name):
     res.append(InstallEntry(
         os.path.join(arch, apex_name + ".apex"),
         os.path.join(PACKAGE_PATH, apex_name + "-" + arch + ".apex"),
+        module_sdk=False,
         install_unzipped=False))
   return res
 
@@ -73,6 +76,7 @@ def install_sdk_entries(mainline_sdk_name, sdk_dir):
       os.path.join("mainline-sdks",
                    mainline_sdk_name + "-" + SDK_VERSION + ".zip"),
       os.path.join(SDK_PATH, SDK_VERSION, sdk_dir),
+      module_sdk=True,
       install_unzipped=True)]
 
 
@@ -288,6 +292,10 @@ def get_args():
   parser.add_argument("--local-dist", metavar="PATH",
                       help="Take prebuilts from this local dist dir instead of "
                       "using fetch_artifact")
+  parser.add_argument("--skip-apex", action="store_true",
+                      help="Do not fetch .apex files.")
+  parser.add_argument("--skip-module-sdk", action="store_true",
+                      help="Do not fetch and unpack sdk and module_export zips.")
   parser.add_argument("--skip-cls", action="store_true",
                       help="Do not create branches or git commits")
   parser.add_argument("--upload", action="store_true",
@@ -307,7 +315,15 @@ def main():
   if any(path for path in GIT_PROJECT_ROOTS if not os.path.exists(path)):
     sys.exit("This script must be run in the root of the Android build tree.")
 
-  install_paths = [entry.install_path for entry in install_entries]
+  entries = install_entries
+  if args.skip_apex:
+    entries = [entry for entry in entries if entry.module_sdk]
+  if args.skip_module_sdk:
+    entries = [entry for entry in entries if not entry.module_sdk]
+  if not entries:
+    sys.exit("Both APEXes and SDKs skipped - nothing to do.")
+
+  install_paths = [entry.install_path for entry in entries]
   install_paths_per_root = install_paths_per_git_root(
       GIT_PROJECT_ROOTS, install_paths)
 
@@ -320,14 +336,14 @@ def main():
 
   for git_root, subpaths in install_paths_per_root.items():
     remove_files(git_root, subpaths, not args.skip_cls)
-  for entry in install_entries:
+  for entry in entries:
     install_entry(args.build, args.local_dist, entry)
 
   # Postprocess the Android.bp files in the SDK snapshot to control prefer flags
   # on the prebuilts through SOONG_CONFIG_art_module_source_build.
   # TODO(b/174997203): Replace this with a better way to control prefer flags on
   # Mainline module prebuilts.
-  for entry in install_entries:
+  for entry in entries:
     if entry.install_unzipped:
       bp_path = os.path.join(entry.install_path, "Android.bp")
       if os.path.exists(bp_path):
