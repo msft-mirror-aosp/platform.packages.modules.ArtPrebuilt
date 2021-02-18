@@ -206,21 +206,24 @@ def remove_files(git_root, subpaths, stage_removals):
   check_call(["rm", "-rf"] + subpaths, cwd=git_root)
 
 
-def commit(git_root, prebuilt_descr, branch, build, add_paths):
+def commit(git_root, prebuilt_descr, branch, target, build, add_paths, bug_number):
   """Commits the new prebuilts."""
   check_call(["git", "add"] + add_paths, cwd=git_root)
 
   if build:
     message = (
         "Update {prebuilt_descr} prebuilts to build {build}.\n\n"
-        "Taken from branch {branch}."
-        .format(prebuilt_descr=prebuilt_descr, branch=branch, build=build))
+        "Taken from branch {branch}, target {target}."
+        .format(prebuilt_descr=prebuilt_descr, branch=branch, target=target,
+                build=build))
   else:
     message = (
         "DO NOT SUBMIT: Update {prebuilt_descr} prebuilts from local build."
         .format(prebuilt_descr=prebuilt_descr))
   message += ("\n\nCL prepared by {}."
               "\n\nTest: Presubmits".format(SCRIPT_PATH))
+  if bug_number:
+    message += ("\nBug: {}".format(bug_number))
   msg_fd, msg_path = tempfile.mkstemp()
   with os.fdopen(msg_fd, "w") as f:
     f.write(message)
@@ -298,6 +301,9 @@ def get_args():
                       help="Do not fetch and unpack sdk and module_export zips.")
   parser.add_argument("--skip-cls", action="store_true",
                       help="Do not create branches or git commits")
+  parser.add_argument("--bug", metavar="NUMBER",
+                      help="Add a 'Bug' line with this number to commit "
+                      "messages.")
   parser.add_argument("--upload", action="store_true",
                       help="Upload the CLs to Gerrit")
 
@@ -351,7 +357,8 @@ def main():
 
   if not args.skip_cls:
     for git_root, subpaths in install_paths_per_root.items():
-      commit(git_root, PREBUILT_DESCR, BRANCH, args.build, subpaths)
+      commit(git_root, PREBUILT_DESCR, BRANCH, TARGET, args.build, subpaths,
+             args.bug)
 
     if args.upload:
       # Don't upload all projects in a single repo upload call, because that
