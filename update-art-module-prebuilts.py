@@ -1,4 +1,4 @@
-#!/usr/bin/env -S python -B
+#!/usr/bin/env -S python3 -B
 #
 # Copyright (C) 2021 The Android Open Source Project
 #
@@ -338,7 +338,8 @@ def main():
     branch_name += "-" + args.build
 
   if not args.skip_cls:
-    start_branch(branch_name, install_paths_per_root.keys())
+    git_paths = list(install_paths_per_root.keys())
+    start_branch(branch_name, git_paths)
 
   for git_root, subpaths in install_paths_per_root.items():
     remove_files(git_root, subpaths, not args.skip_cls)
