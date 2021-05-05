@@ -37,6 +37,8 @@ prebuilt_apex {
         },
     },
 
+    exported_bootclasspath_fragments: ["art-bootclasspath-fragment"],
+
     // Export the dex implementation jars of each of these modules for use by
     // their corresponding java_import module.
     exported_java_libs: [
