@@ -37,15 +37,8 @@ prebuilt_apex {
         },
     },
 
+    // Make fragment related files from the apex file available for use by the
+    // build when using prebuilts, e.g. for running the boot jars package check
+    // and hidden API flag validation among other uses.
     exported_bootclasspath_fragments: ["art-bootclasspath-fragment"],
-
-    // Export the dex implementation jars of each of these modules for use by
-    // their corresponding java_import module.
-    exported_java_libs: [
-        "apache-xml",
-        "bouncycastle",
-        "core-libart",
-        "core-oj",
-        "okhttp",
-    ],
 }
