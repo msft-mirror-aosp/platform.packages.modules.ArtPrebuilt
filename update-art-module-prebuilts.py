@@ -181,20 +181,20 @@ def fetch_artifact(branch, target, build, fetch_pattern, local_dir):
   check_call(cmd, cwd=local_dir)
 
 
-def start_branch(branch_name, git_dirs):
+def start_branch(git_branch_name, git_dirs):
   """Creates a new repo branch in the given projects."""
-  check_call(["repo", "start", branch_name] + git_dirs)
+  check_call(["repo", "start", git_branch_name] + git_dirs)
   # In case the branch already exists we reset it to upstream, to get a clean
   # update CL.
   for git_dir in git_dirs:
     check_call(["git", "reset", "--hard", "@{upstream}"], cwd=git_dir)
 
 
-def upload_branch(git_root, branch_name):
+def upload_branch(git_root, git_branch_name):
   """Uploads the CLs in the given branch in the given project."""
   # Set the branch as topic to bundle with the CLs in other git projects (if
   # any).
-  check_call(["repo", "upload", "-t", "--br=" + branch_name, git_root])
+  check_call(["repo", "upload", "-t", "--br=" + git_branch_name, git_root])
 
 
 def remove_files(git_root, subpaths, stage_removals):
@@ -235,7 +235,7 @@ def commit(git_root, prebuilt_descr, branch, target, build, add_paths, bug_numbe
   os.unlink(msg_path)
 
 
-def install_entry(build, local_dist, entry):
+def install_entry(branch, target, build, local_dist, entry):
   """Installs one file specified by entry."""
 
   install_dir, install_file = os.path.split(entry.install_path)
@@ -243,7 +243,7 @@ def install_entry(build, local_dist, entry):
     os.makedirs(install_dir)
 
   if build:
-    fetch_artifact(BRANCH, TARGET, build, entry.source_path, install_dir)
+    fetch_artifact(branch, target, build, entry.source_path, install_dir)
   else:
     check_call(["cp", os.path.join(local_dist, entry.source_path), install_dir])
   source_file = os.path.basename(entry.source_path)
@@ -289,9 +289,12 @@ def get_args():
   parser = argparse.ArgumentParser(
       epilog="Either --build or --local-dist is required.")
 
+  parser.add_argument("--branch", default=BRANCH,
+                      help="Branch to fetch, defaults to " + BRANCH)
+  parser.add_argument("--target", default=TARGET,
+                      help="Target to fetch, defaults to " + TARGET)
   parser.add_argument("--build", metavar="NUMBER",
-                      help="Build number to fetch from branch {}, target {}"
-                      .format(BRANCH, TARGET))
+                      help="Build number to fetch")
   parser.add_argument("--local-dist", metavar="PATH",
                       help="Take prebuilts from this local dist dir instead of "
                       "using fetch_artifact")
@@ -333,18 +336,18 @@ def main():
   install_paths_per_root = install_paths_per_git_root(
       GIT_PROJECT_ROOTS, install_paths)
 
-  branch_name = PREBUILT_DESCR.lower().replace(" ", "-") + "-update"
+  git_branch_name = PREBUILT_DESCR.lower().replace(" ", "-") + "-update"
   if args.build:
-    branch_name += "-" + args.build
+    git_branch_name += "-" + args.build
 
   if not args.skip_cls:
     git_paths = list(install_paths_per_root.keys())
-    start_branch(branch_name, git_paths)
+    start_branch(git_branch_name, git_paths)
 
   for git_root, subpaths in install_paths_per_root.items():
     remove_files(git_root, subpaths, not args.skip_cls)
   for entry in entries:
-    install_entry(args.build, args.local_dist, entry)
+    install_entry(args.branch, args.target, args.build, args.local_dist, entry)
 
   # Postprocess the Android.bp files in the SDK snapshot to control prefer flags
   # on the prebuilts through SOONG_CONFIG_art_module_source_build.
@@ -358,14 +361,14 @@ def main():
 
   if not args.skip_cls:
     for git_root, subpaths in install_paths_per_root.items():
-      commit(git_root, PREBUILT_DESCR, BRANCH, TARGET, args.build, subpaths,
+      commit(git_root, PREBUILT_DESCR, args.branch, args.target, args.build, subpaths,
              args.bug)
 
     if args.upload:
       # Don't upload all projects in a single repo upload call, because that
       # makes it pop up an interactive editor.
       for git_root in install_paths_per_root:
-        upload_branch(git_root, branch_name)
+        upload_branch(git_root, git_branch_name)
 
 
 if __name__ == "__main__":
